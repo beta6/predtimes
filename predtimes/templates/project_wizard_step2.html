@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}New Project Wizard - Step 2{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>New Project Wizard: Select Tables (Step 2 of 3)</h2>
+    <hr>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-5">
+                <h5>Available Tables</h5>
+                <select id="available-tables" class="form-select" multiple size="10">
+                    {% for table in available_tables %}
+                        <option value="{{ table }}">{{ table }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 text-center align-self-center">
+                <button type="button" id="add-table" class="btn btn-secondary mb-2 d-block w-100">--&gt;</button>
+                <button type="button" id="remove-table" class="btn btn-secondary d-block w-100">&lt;--</button>
+            </div>
+            <div class="col-md-5">
+                <h5>Selected Tables</h5>
+                <select id="selected-tables" name="selected_tables" class="form-select" multiple size="10"></select>
+            </div>
+        </div>
+
+        <hr>
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'wizard_step1' %}" class="btn btn-secondary">Previous</a>
+            <button type="submit" class="btn btn-primary">Next</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const available = document.getElementById('available-tables');
+    const selected = document.getElementById('selected-tables');
+    const addBtn = document.getElementById('add-table');
+    const removeBtn = document.getElementById('remove-table');
+    const form = addBtn.closest('form');
+
+    function moveOptions(source, destination) {
+        Array.from(source.selectedOptions).forEach(option => {
+            destination.appendChild(option);
+        });
+    }
+
+    addBtn.addEventListener('click', () => moveOptions(available, selected));
+    removeBtn.addEventListener('click', () => moveOptions(selected, available));
+
+    // Before submitting, select all options in the 'selected' list so they get included in the form data
+    form.addEventListener('submit', function() {
+        Array.from(selected.options).forEach(option => {
+            option.selected = true;
+        });
+    });
+});
+</script>
+{% endblock %}

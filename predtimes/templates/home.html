@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Predtimes{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Predtimes</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <span class="navbar-text me-3">
+                        Welcome, {{ user }}
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="mt-4">
+        <h3>Create New Project</h3>
+        <a href="{% url 'wizard_step1' %}" class="btn btn-secondary">New Project Wizard</a>
+    </div>
+
+    <hr class="my-4">
+
+    <h3>Existing Projects</h3>
+    <div class="list-group">
+        {% for project in projects %}
+            <a href="{% url 'project_detail' project.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ project.name }}</h5>
+                    <small>{{ project.created_at|date:"Y-m-d" }}</small>
+                </div>
+                <p class="mb-1">Created by: {{ project.creator }}</p>
+            </a>
+            <form action="{% url 'delete_project' project.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete project {{ project.name }}?');">Delete</button>
+            </form>
+        {% empty %}
+            <p class="text-muted">No projects found. Create one using the wizard.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+# Core Django framework
+Django~=5.0
+
+# ML and Data Processing
+numpy
+pandas
+scikit-learn
+tensorflow
+joblib # Added for model/scaler serialization
+
+# Database Connectivity
+SQLAlchemy
+
+# --- Database Drivers ---
+# Uncomment the driver for the database you want to connect to.
+# You may need to install system-level dependencies for some of these.
+
+# For PostgreSQL
+psycopg2-binary
+
+# For MySQL/MariaDB
+PyMySQL # Added for SQLAlchemy with MySQL
+# mysqlclient # Commented out, prefer PyMySQL for SQLAlchemy
+
+# For Microsoft SQL Server
+pyodbc
+
+# For Celery
+celery
+redis

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}New Project Wizard - Step 1{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>New Project Wizard: Database Connection (Step 1 of 3)</h2>
+    <hr>
+    <form method="post">
+        {% csrf_token %}
+        
+        {{ form.as_p }}
+
+        <div class="mt-3">
+            <p>
+                <button type="button" class="btn btn-info" id="test-connection-btn">Test Connection</button>
+                <span id="connection-status"></span>
+            </p>
+        </div>
+
+        <hr>
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'home' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Next</button>
+        </div>
+    </form>
+</div>
+
+{% comment %} TODO: Add Javascript for Test Connection button {% endcomment %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testBtn = document.getElementById('test-connection-btn');
+    const statusSpan = document.getElementById('connection-status');
+    const form = testBtn.closest('form');
+
+    testBtn.addEventListener('click', function() {
+        statusSpan.innerHTML = 'Testing...';
+
+        const formData = new FormData(form);
+        const url = "{% url 'test_db_connection' %}";
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest', // To identify it as an AJAX request
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                statusSpan.innerHTML = `<span class="text-success">✅ ${data.message}</span>`;
+            } else {
+                statusSpan.innerHTML = `<span class="text-danger">❌ ${data.message}</span>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            statusSpan.innerHTML = `<span class="text-danger">❌ An unexpected error occurred.</span>`;
+        });
+    });
+});
+</script>
+{% endblock %}

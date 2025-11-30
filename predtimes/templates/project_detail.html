@@ -1,0 +1,1382 @@
+{% extends "base.html" %}
+{% load project_extras %}
+
+{% block title %}{{ project.name }} - Project Details{% endblock %}
+
+{% block content %}
+<style>
+    .datetime-column {
+        background-color: #006400 !important; /* Dark Green */
+        color: white !important;
+    }
+    .numeric-column {
+        background-color: #98FB98 !important; /* Light Green */
+    }
+    .multigroup-column {
+        background-color: #c8e6c9 !important; /* PaleGreen */
+    }
+</style>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'home' %}">Predtimes</a>
+        <span class="navbar-text">
+            Project: <strong>{{ project.name }}</strong> | DB: <strong>{{ project.database.host }}</strong>
+        </span>
+        <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    {% csrf_token %}
+    <div class="card bg-light p-2 mb-3">
+        <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#datetimeColumnModal">Select Datetime Columns</button>
+        <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#numericColumnModal">Select Numeric Columns</button>
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#multigroupColumnModal">Select Multigroup Columns</button>
+    </div>
+
+    <!-- Datetime Column Selection Modal -->
+    <div class="modal fade" id="datetimeColumnModal" tabindex="-1" aria-labelledby="datetimeColumnModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="datetimeColumnModalLabel">Select Datetime Columns (Max 2)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="datetime-column-form">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="save-datetime-columns">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Numeric Column Selection Modal -->
+    <div class="modal fade" id="numericColumnModal" tabindex="-1" aria-labelledby="numericColumnModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="numericColumnModalLabel">Select Numeric Columns</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="numeric-column-form">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="save-numeric-columns">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multigroup Column Selection Modal -->
+    <div class="modal fade" id="multigroupColumnModal" tabindex="-1" aria-labelledby="multigroupColumnModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="multigroupColumnModalLabel">Select Multigroup Columns</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="multigroup-column-form">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="save-multigroup-columns">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <!-- Training Modal -->
+    <div class="modal fade" id="trainingModal" tabindex="-1" aria-labelledby="trainingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trainingModalLabel">Train Model</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="model-architecture" class="form-label">Select Model Architecture:</label>
+                        <select class="form-select" id="model-architecture">
+                            <option value="conv1d">Conv1D</option>
+                            <option value="conv1d_gru">Conv1D + GRU</option>
+                            <option value="transformer">Transformer</option>
+                            <option value="rnn">RNN</option>
+                            <option value="dlinear">DLinear</option>
+                            <option value="patchtst">PatchTST</option>
+                        </select>
+                    </div>
+                    <div id="training-status-area" class="mt-3" style="display: none;">
+                        <h6>Training Progress:</h6>
+                        <div class="progress">
+                            <div id="training-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <p class="mt-2">Status: <span id="training-status-text">Idle</span></p>
+                        <p>Details: <span id="training-details-text"></span></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="start-training-btn">Start Training</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tables-container">
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading table data...</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="predictions-chart-container" class="card bg-light p-3 mt-3">
+        <h4>Predictions Chart</h4>
+        <canvas id="predictions-chart"></canvas>
+    </div>
+
+    <div id="predictions-table" class="card bg-light p-3 mt-3">
+        <!-- Predictions table will be loaded here by JavaScript -->
+    </div>
+
+    {% if error_message %}
+        <div class="alert alert-danger">{{ error_message }}</div>
+    {% endif %}
+
+        <div class="card bg-light p-2 mt-3">
+
+            <div class="d-flex justify-content-start align-items-center">
+
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#trainingModal">Train</button>
+
+                <button id="generate-predictions-btn" class="btn btn-warning me-2">Generate Predictions</button>
+
+                <a href="{% url 'download_predictions_csv' project.id %}" id="download-predictions-btn" class="btn btn-info me-2" style="display: none;">Download CSV</a>
+
+                <div class="input-group" style="width: 200px;">
+
+                    <span class="input-group-text"># Predictions</span>
+
+                    <input type="number" class="form-control" id="num-predictions" value="10">
+
+                </div>
+
+            </div>
+
+        </div>
+
+    ...
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // -----------------
+
+        // State Management
+
+        // -----------------
+
+        const projectId = '{{ project.id }}';
+
+        const initialGetDataTaskId = '{{ get_data_task_id }}';
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const projectTables = {{ serialized_selected_tables|safe_json }};
+
+    
+
+        let currentSelectedDatetimeColumns = {{ selected_datetime_columns|safe_json }};
+
+        let currentSelectedNumericColumns = {{ selected_numeric_columns|safe_json }};
+
+        let currentSelectedMultigroupColumns = {{ selected_multigroup_columns|safe_json }};
+
+        let currentTableDataTaskId = initialGetDataTaskId;
+
+        let tableData = null;
+
+        let predictionsChart = null;
+
+    
+
+        // -----------------
+
+        // API Calls
+
+        // -----------------
+
+        function makeAjaxRequest(url, method, body = null) {
+
+            const options = {
+
+                method: method,
+
+                headers: {
+
+                    'Content-Type': 'application/json',
+
+                    'X-CSRFToken': csrfToken,
+
+                    'X-Requested-With': 'XMLHttpRequest',
+
+                },
+
+            };
+
+            if (body) {
+
+                options.body = JSON.stringify(body);
+
+            }
+
+            return fetch(url, options)
+
+                .then(response => {
+
+                    if (!response.ok) {
+
+                        return response.json().then(err => { throw new Error(err.message || 'Network response was not ok'); });
+
+                    }
+
+                    return response.json();
+
+                });
+
+        }
+
+    
+
+        function pollTaskStatus(pollUrl, onSUCCESS, onFAILURE, onPENDING) {
+
+            makeAjaxRequest(pollUrl, 'GET')
+
+                .then(data => {
+
+                    if (data.status === 'SUCCESS') {
+
+                        onSUCCESS(data);
+
+                    } else if (data.status === 'FAILURE') {
+
+                        onFAILURE(data);
+
+                    } else {
+
+                        onPENDING(data);
+
+                        setTimeout(() => pollTaskStatus(pollUrl, onSUCCESS, onFAILURE, onPENDING), 3000);
+
+                    }
+
+                })
+
+                .catch(error => {
+
+                    console.error(`Error polling ${pollUrl}:`, error);
+
+                    onFAILURE({ message: 'Error polling task status.' });
+
+                });
+
+        }
+
+    
+
+        function fetchPredictions() {
+
+            const url = `/project/${projectId}/get_predictions_data/`;
+
+            const tableDiv = document.getElementById('predictions-table');
+
+            tableDiv.innerHTML = `
+
+                <div class="d-flex justify-content-center">
+
+                    <div class="spinner-border" role="status">
+
+                        <span class="visually-hidden">Loading...</span>
+
+                    </div>
+
+                </div>
+
+            `;
+
+    
+
+            makeAjaxRequest(url, 'GET')
+
+                .then(data => {
+
+                    updatePredictionsChart(data);
+
+                    updatePredictionsTable(data);
+
+                })
+
+                .catch(error => {
+
+                    console.error('Error fetching prediction data:', error);
+
+                    tableDiv.innerHTML = '<p class="text-danger">Could not load prediction data.</p>';
+
+                });
+
+        }
+
+    
+
+        // -----------------
+
+        // UI Rendering
+
+        // -----------------
+
+        function renderTables() {
+
+            const container = document.getElementById('tables-container');
+
+            container.innerHTML = '';
+
+    
+
+            if (!projectTables || projectTables.length === 0) {
+
+                container.innerHTML = '<p class="text-muted">No tables selected for this project. Please select tables in the wizard.</p>';
+
+                return;
+
+            }
+
+    
+
+            projectTables.forEach(table => {
+
+                const tableInfo = tableData ? tableData[table.table_name] : null;
+
+                let tableHtml = `
+
+                    <div class="card mb-3">
+
+                        <div class="card-header">${table.table_name}</div>
+
+                        <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+
+                `;
+
+                if (tableInfo) {
+
+                    tableHtml += `
+
+                        <div class="table-responsive">
+
+                            <table class="table table-striped table-sm">
+
+                                <thead>
+
+                                    <tr>
+
+                                        ${tableInfo.headers.map(header => {
+
+                                            let colClass = '';
+
+                                            if (currentSelectedDatetimeColumns.includes(`${table.table_name}.${header}`)) {
+
+                                                colClass = 'datetime-column';
+
+                                            } else if (currentSelectedNumericColumns.includes(`${table.table_name}.${header}`)) {
+
+                                                colClass = 'numeric-column';
+
+                                            } else if (currentSelectedMultigroupColumns.includes(`${table.table_name}.${header}`)) {
+
+                                                colClass = 'multigroup-column';
+
+                                            }
+
+                                            return `<th class="${colClass}">${header}</th>`;
+
+                                        }).join('')}
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    ${tableInfo.rows.map(row => `
+
+                                        <tr>
+
+                                            ${row.map((cell, index) => {
+
+                                                const header = tableInfo.headers[index];
+
+                                                let colClass = '';
+
+                                                if (currentSelectedDatetimeColumns.includes(`${table.table_name}.${header}`)) {
+
+                                                    colClass = 'datetime-column';
+
+                                                } else if (currentSelectedNumericColumns.includes(`${table.table_name}.${header}`)) {
+
+                                                    colClass = 'numeric-column';
+
+                                                } else if (currentSelectedMultigroupColumns.includes(`${table.table_name}.${header}`)) {
+
+                                                    colClass = 'multigroup-column';
+
+                                                }
+
+                                                return `<td class="${colClass}">${cell}</td>`;
+
+                                            }).join('')}
+
+                                        </tr>
+
+                                    `).join('')}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    `;
+
+                } else {
+
+                    tableHtml += '<p class="text-muted">No data loaded for this table.</p>';
+
+                }
+
+                tableHtml += `</div></div>`;
+
+                container.innerHTML += tableHtml;
+
+            });
+
+        }
+
+    
+
+        function populateModals() {
+
+            const datetimeModalBody = document.getElementById('datetime-column-form');
+
+            const numericModalBody = document.getElementById('numeric-column-form');
+
+            const multigroupModalBody = document.getElementById('multigroup-column-form');
+
+            if (!datetimeModalBody || !numericModalBody || !multigroupModalBody || !tableData) return;
+
+    
+
+            datetimeModalBody.innerHTML = '';
+
+            numericModalBody.innerHTML = '';
+
+            multigroupModalBody.innerHTML = '';
+
+    
+
+            for (const [tableName, tableInfo] of Object.entries(tableData)) {
+
+                let dtHtml = `<h6>Table: ${tableName}</h6><div class="ms-3">`;
+
+                let numHtml = `<h6>Table: ${tableName}</h6><div class="ms-3">`;
+
+                let mgHtml = `<h6>Table: ${tableName}</h6><div class="ms-3">`;
+
+    
+
+                tableInfo.headers.forEach(header => {
+
+                    const colId = `${tableName}.${header}`;
+
+                    const dtChecked = currentSelectedDatetimeColumns.includes(colId) ? 'checked' : '';
+
+                    const numChecked = currentSelectedNumericColumns.includes(colId) ? 'checked' : '';
+
+                    const mgChecked = currentSelectedMultigroupColumns.includes(colId) ? 'checked' : '';
+
+    
+
+                    dtHtml += `
+
+                        <div class="form-check">
+
+                            <input class="form-check-input datetime-checkbox" type="checkbox" value="${colId}" id="dt-${tableName}-${header}" ${dtChecked}>
+
+                            <label class="form-check-label" for="dt-${tableName}-${header}">${header}</label>
+
+                        </div>
+
+                    `;
+
+                    numHtml += `
+
+                        <div class="form-check">
+
+                            <input class="form-check-input numeric-checkbox" type="checkbox" value="${colId}" id="num-${tableName}-${header}" ${numChecked}>
+
+                            <label class="form-check-label" for="num-${tableName}-${header}">${header}</label>
+
+                        </div>
+
+                    `;
+
+                    mgHtml += `
+
+                        <div class="form-check">
+
+                            <input class="form-check-input multigroup-checkbox" type="checkbox" value="${colId}" id="mg-${tableName}-${header}" ${mgChecked}>
+
+                            <label class="form-check-label" for="mg-${tableName}-${header}">${header}</label>
+
+                        </div>
+
+                    `;
+
+                });
+
+                dtHtml += '</div>';
+
+                numHtml += '</div>';
+
+                mgHtml += '</div>';
+
+                datetimeModalBody.innerHTML += dtHtml;
+
+                numericModalBody.innerHTML += numHtml;
+
+                multigroupModalBody.innerHTML += mgHtml;
+
+            }
+
+        }
+
+    
+
+            function updatePredictionsChart(data) {
+
+    
+
+                if (!predictionsChart) {
+
+    
+
+                    console.warn("predictionsChart not initialized. Cannot update chart.");
+
+    
+
+                    return;
+
+    
+
+                }
+
+    
+
+        
+
+    
+
+                const colors = ['blue', 'orange', 'green', 'red', 'purple', 'yellow', 'cyan', 'magenta'];
+
+    
+
+                let colorIndex = 0;
+
+    
+
+                const newDatasets = [];
+
+    
+
+        
+
+    
+
+                // Process actual data
+
+    
+
+                for (const [groupName, groupData] of Object.entries(data.actual_data)) {
+
+    
+
+                    for (const [colName, colData] of Object.entries(groupData)) {
+
+    
+
+                        newDatasets.push({
+
+    
+
+                            label: `${groupName} - ${colName} (Actual)`,
+
+    
+
+                            data: colData,
+
+    
+
+                            borderColor: colors[colorIndex % colors.length],
+
+    
+
+                            fill: false,
+
+    
+
+                            borderDash: [5, 5]
+
+    
+
+                        });
+
+    
+
+                        colorIndex++;
+
+    
+
+                    }
+
+    
+
+                }
+
+    
+
+        
+
+    
+
+                // Process predicted data
+
+    
+
+                colorIndex = 0; // Reset for consistency
+
+    
+
+                for (const [groupName, groupData] of Object.entries(data.predicted_data)) {
+
+    
+
+                    for (const [colName, colData] of Object.entries(groupData.predicted_data)) {
+
+    
+
+                        newDatasets.push({
+
+    
+
+                            label: `${groupName} - ${colName} (Predicted)`,
+
+    
+
+                            data: colData,
+
+    
+
+                            borderColor: colors[colorIndex % colors.length],
+
+    
+
+                            fill: false
+
+    
+
+                        });
+
+    
+
+                        colorIndex++;
+
+    
+
+                    }
+
+    
+
+                }
+
+    
+
+        
+
+    
+
+                predictionsChart.data.labels = data.labels;
+
+    
+
+                predictionsChart.data.datasets = newDatasets;
+
+    
+
+                predictionsChart.update();
+
+    
+
+            }
+
+    
+
+        
+
+    
+
+                        function updatePredictionsTable(data) {
+                            const tableDiv = document.getElementById('predictions-table');
+                            const downloadBtn = document.getElementById('download-predictions-btn');
+                            
+                            tableDiv.innerHTML = ''; // Clear previous content
+
+                            if (data.predicted_data && Object.keys(data.predicted_data).length > 0) {
+                                let finalHtml = '<h4>Latest Predictions</h4>';
+                                
+                                for (const [groupName, groupData] of Object.entries(data.predicted_data)) {
+                                    finalHtml += `<h5>Group: ${groupName}</h5>`;
+                                    let tableHtml = '<table class="table table-striped table-hover"><thead><tr><th scope="col">Timestamp</th>';
+                                    
+                                    const columnNames = Object.keys(groupData.predicted_data);
+                                    let extraDtHeaders = [];
+                                    
+                                    columnNames.forEach(colName => {
+                                        tableHtml += `<th scope="col">Predicted ${colName}</th>`;
+                                    });
+
+                                    // Check for extra datetime columns from the first data point
+                                    if (columnNames.length > 0 && groupData.predicted_data[columnNames[0]].length > 0) {
+                                        const firstPoint = groupData.predicted_data[columnNames[0]][0];
+                                        for (const key in firstPoint) {
+                                            if (key !== 'x' && key !== 'y') {
+                                                extraDtHeaders.push(key);
+                                                tableHtml += `<th scope="col">${key}</th>`;
+                                            }
+                                        }
+                                    }
+                
+                                    tableHtml += '</tr></thead><tbody>';
+                    
+                                    const predictionsByTimestamp = {};
+                                    for (const [colName, colData] of Object.entries(groupData.predicted_data)) {
+                                        colData.forEach(p => {
+                                            if (!predictionsByTimestamp[p.x]) {
+                                                predictionsByTimestamp[p.x] = {};
+                                            }
+                                            predictionsByTimestamp[p.x][colName] = p.y;
+                                            // Store extra fields
+                                            extraDtHeaders.forEach(header => {
+                                                predictionsByTimestamp[p.x][header] = p[header];
+                                            });
+                                        });
+                                    }
+                    
+                                    const timestamps = Object.keys(predictionsByTimestamp).sort();
+                    
+                                    timestamps.forEach(ts => {
+                                        tableHtml += `<tr><td>${new Date(ts).toLocaleString()}</td>`;
+                                        columnNames.forEach(colName => {
+                                            const value = predictionsByTimestamp[ts][colName];
+                                            tableHtml += `<td>${value ? value.toFixed(2) : ''}</td>`;
+                                        });
+            
+                                        extraDtHeaders.forEach(header => {
+                                            const value = predictionsByTimestamp[ts][header];
+                                            tableHtml += `<td>${value || ''}</td>`;
+                                        });
+                
+                                        tableHtml += '</tr>';
+                                    });
+                    
+                                    tableHtml += '</tbody></table>';
+                                    finalHtml += tableHtml;
+                                }
+                
+                                tableDiv.innerHTML = finalHtml;
+                                if(downloadBtn) downloadBtn.style.display = 'inline-block';
+
+                            } else {
+                                tableDiv.innerHTML = '<p class="text-muted">No prediction data available yet. Generate predictions to see results.</p>';
+                                if(downloadBtn) downloadBtn.style.display = 'none';
+                            }
+                        }
+
+    
+
+        function updateButtonState(button, text, disabled, showSpinner = false) {
+
+            button.disabled = disabled;
+
+            let content = text;
+
+            if (showSpinner) {
+
+                content = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${text}`;
+
+            }
+
+            button.innerHTML = content;
+
+        }
+
+    
+
+        // -----------------
+
+        // Event Handlers
+
+        // -----------------
+
+        function handleGeneratePredictions() {
+
+            const generateBtn = document.getElementById('generate-predictions-btn');
+
+            const numPredictionsInput = document.getElementById('num-predictions');
+
+            const numPredictions = parseInt(numPredictionsInput.value, 10) || 10;
+
+            const url = `/project/${projectId}/generate_predictions/`;
+
+    
+
+            updateButtonState(generateBtn, 'Generating...', true, true);
+
+    
+
+            makeAjaxRequest(url, 'POST', { num_predictions: numPredictions })
+
+                .then(data => {
+
+                    if (data.status === 'ok') {
+
+                        alert(data.message);
+
+                        pollPredictionStatus(data.task_id);
+
+                    } else {
+
+                        alert('Error: ' + data.message);
+
+                        updateButtonState(generateBtn, 'Generate Predictions', false);
+
+                    }
+
+                })
+
+                .catch(error => {
+
+                    console.error('Error:', error);
+
+                    alert('An unexpected error occurred while generating predictions.');
+
+                    updateButtonState(generateBtn, 'Generate Predictions', false);
+
+                });
+
+        }
+
+    
+
+        function pollPredictionStatus(taskId) {
+
+            const generateBtn = document.getElementById('generate-predictions-btn');
+
+            const onSUCCESS = () => {
+
+                fetchPredictions();
+
+                refreshTableData();
+
+                updateButtonState(generateBtn, 'Generate Predictions', false);
+
+            };
+
+            const onFAILURE = () => {
+
+                alert('Prediction generation failed. Check logs for details.');
+
+                updateButtonState(generateBtn, 'Generate Predictions', false);
+
+            };
+
+            const onPENDING = (data) => {
+
+                updateButtonState(generateBtn, `Polling: ${data.status}`, true, true);
+
+            };
+
+    
+
+            const pollUrl = `/task/${taskId}/status/`;
+
+            pollTaskStatus(pollUrl, onSUCCESS, onFAILURE, onPENDING);
+
+        }
+
+    
+
+        function handleSaveColumnSelection(type) {
+
+            const modalId = `${type}ColumnModal`;
+
+            const modalEl = document.getElementById(modalId);
+
+            const selectedColumns = Array.from(modalEl.querySelectorAll(`.${type}-checkbox:checked`)).map(cb => cb.value);
+
+    
+
+            const url = `/project/${projectId}/save_column_selection/`;
+
+            makeAjaxRequest(url, 'POST', { columns: selectedColumns, type: type })
+
+                .then(data => {
+
+                    if (data.status === 'ok') {
+
+                        alert(data.message);
+
+                        if (type === 'datetime') {
+
+                            currentSelectedDatetimeColumns = selectedColumns;
+
+                        } else if (type === 'numeric') {
+
+                            currentSelectedNumericColumns = selectedColumns;
+
+                        } else if (type === 'multigroup') {
+
+                            currentSelectedMultigroupColumns = selectedColumns;
+
+                        }
+
+                        refreshTableData();
+
+                    } else {
+
+                        alert('Error: ' + data.message);
+
+                    }
+
+                    bootstrap.Modal.getInstance(modalEl).hide();
+
+                })
+
+                .catch(error => {
+
+                    console.error('Error:', error);
+
+                    alert('An unexpected error occurred.');
+
+                });
+
+        }
+
+    
+
+        function handleStartTraining() {
+
+            const trainingModal = document.getElementById('trainingModal');
+
+            const startTrainingBtn = trainingModal.querySelector('#start-training-btn');
+
+            const architecture = trainingModal.querySelector('#model-architecture').value;
+
+            const url = `/project/${projectId}/start_training/`;
+
+    
+
+            updateButtonState(startTrainingBtn, 'Initiating...', true, true);
+
+            // Reset UI
+
+            document.getElementById('training-status-area').style.display = 'block';
+
+            // ... (rest of UI reset)
+
+    
+
+            makeAjaxRequest(url, 'POST', { architecture: architecture })
+
+                .then(data => {
+
+                    if (data.status === 'ok') {
+
+                        document.getElementById('training-status-text').textContent = data.message;
+
+                        pollTrainingStatus(data.training_session_id);
+
+                    } else {
+
+                        alert('Error: ' + data.message);
+
+                        updateButtonState(startTrainingBtn, 'Start Training', false);
+
+                    }
+
+                })
+
+                .catch(error => {
+
+                    console.error('Error:', error);
+
+                    alert('An unexpected error occurred while starting training.');
+
+                    updateButtonState(startTrainingBtn, 'Start Training', false);
+
+                });
+
+        }
+
+    
+
+        function pollTrainingStatus(trainingSessionId) {
+
+            const trainingProgressBar = document.getElementById('training-progress-bar');
+
+            const trainingStatusText = document.getElementById('training-status-text');
+
+            const trainingDetailsText = document.getElementById('training-details-text');
+
+            const startTrainingBtn = document.querySelector('#start-training-btn');
+
+    
+
+            const onSUCCESS = (data) => {
+
+                trainingProgressBar.style.width = '100%';
+
+                trainingProgressBar.setAttribute('aria-valuenow', 100);
+
+                trainingProgressBar.textContent = '100%';
+
+                trainingStatusText.textContent = 'Training Complete!';
+
+                updateButtonState(startTrainingBtn, 'Start Training', false);
+
+                alert('Model training completed successfully!');
+
+                fetchPredictions();
+
+            };
+
+    
+
+            const onFAILURE = (data) => {
+
+                trainingProgressBar.style.width = '100%';
+
+                trainingProgressBar.classList.remove('progress-bar-animated');
+
+                trainingProgressBar.classList.add('bg-danger');
+
+                trainingProgressBar.setAttribute('aria-valuenow', 100);
+
+                trainingProgressBar.textContent = 'Failed!';
+
+                trainingStatusText.textContent = 'Training Failed!';
+
+                trainingDetailsText.textContent = data.message || 'Check logs for details.';
+
+                updateButtonState(startTrainingBtn, 'Start Training', false);
+
+                alert('Model training failed. Check logs for details.');
+
+            };
+
+    
+
+            const onPENDING = (data) => {
+
+                trainingStatusText.textContent = data.status;
+
+                trainingDetailsText.textContent = data.details;
+
+    
+
+                if (data.status === 'PROGRESS' && data.details) {
+
+                    try {
+
+                        const details = JSON.parse(data.details);
+
+                        if (details.epoch && details.total_epochs) {
+
+                            const progress = (details.epoch / details.total_epochs) * 100;
+
+                            trainingProgressBar.style.width = `${progress}%`;
+
+                            trainingProgressBar.setAttribute('aria-valuenow', progress);
+
+                            trainingProgressBar.textContent = `${Math.round(progress)}%`;
+
+                            trainingStatusText.textContent = `Training: Epoch ${details.epoch}/${details.total_epochs}`;
+
+                        } else if (details.status) {
+
+                             trainingStatusText.textContent = `Training: ${details.status}`;
+
+                        }
+
+                    } catch (e) {
+
+                        console.warn("Could not parse training details JSON:", data.details);
+
+                    }
+
+                }
+
+            };
+
+    
+
+            const pollUrl = `/training_session/${trainingSessionId}/status/`;
+
+            pollTaskStatus(pollUrl, onSUCCESS, onFAILURE, onPENDING);
+
+        }
+
+    
+
+        function refreshTableData() {
+
+            const url = `/project/${projectId}/trigger_table_data_refresh/`;
+
+            const container = document.getElementById('tables-container');
+
+            container.innerHTML = `
+
+                <div class="d-flex justify-content-center">
+
+                    <div class="spinner-border" role="status">
+
+                        <span class="visually-hidden">Refreshing table data...</span>
+
+                    </div>
+
+                </div>
+
+            `;
+
+    
+
+            makeAjaxRequest(url, 'POST')
+
+                .then(data => {
+
+                    if (data.status === 'ok') {
+
+                        currentTableDataTaskId = data.task_id;
+
+                        pollForTableData(currentTableDataTaskId);
+
+                    } else {
+
+                        console.error('Error triggering table data refresh:', data.message);
+
+                        container.innerHTML = '<p class="text-danger">Error refreshing table data.</p>';
+
+                    }
+
+                })
+
+                .catch(error => {
+
+                    console.error('Error triggering table data refresh:', error);
+
+                    container.innerHTML = '<p class="text-danger">Error refreshing table data.</p>';
+
+                });
+
+        }
+
+    
+
+        function pollForTableData(taskId) {
+
+            const onSUCCESS = (data) => {
+
+                tableData = data.data.table_data;
+
+                renderTables();
+
+                populateModals();
+
+            };
+
+            const onFAILURE = (data) => {
+
+                const container = document.getElementById('tables-container');
+
+                const errorMessage = data.message || 'Could not load table data.';
+
+                container.innerHTML = `<p class="text-danger">${errorMessage}</p>`;
+
+            };
+
+            const onPENDING = () => {}; // Do nothing, just wait for the next poll
+
+    
+
+            const pollUrl = `/task/${taskId}/get_table_data/`;
+
+            pollTaskStatus(pollUrl, onSUCCESS, onFAILURE, onPENDING);
+
+        }
+
+    
+
+    
+
+        // -----------------
+
+        // Initialization
+
+        // -----------------
+
+        function initializeChart() {
+
+            const predictionsChartCanvas = document.getElementById('predictions-chart');
+
+            if (predictionsChartCanvas) {
+
+                const ctx = predictionsChartCanvas.getContext('2d');
+
+                predictionsChart = new Chart(ctx, {
+
+                    type: 'line',
+
+                    data: {
+
+                        labels: [],
+
+                        datasets: [] // Remove initial datasets
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        scales: {
+
+                            x: {
+
+                                type: 'time',
+
+                                time: {
+
+                                    unit: 'day'
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                });
+
+            } else {
+
+                console.error("Canvas element with ID 'predictions-chart' not found.");
+
+                const chartContainer = document.getElementById('predictions-chart-container');
+
+                if (chartContainer) {
+
+                    chartContainer.innerHTML = '<p class="text-danger">Error: Chart element not found.</p>';
+
+                }
+
+            }
+
+        }
+
+    
+
+        document.getElementById('generate-predictions-btn')?.addEventListener('click', handleGeneratePredictions);
+
+        document.getElementById('save-datetime-columns')?.addEventListener('click', () => handleSaveColumnSelection('datetime'));
+
+        document.getElementById('save-numeric-columns')?.addEventListener('click', () => handleSaveColumnSelection('numeric'));
+
+        document.getElementById('save-multigroup-columns')?.addEventListener('click', () => handleSaveColumnSelection('multigroup'));
+
+        document.getElementById('start-training-btn')?.addEventListener('click', handleStartTraining);
+
+    
+
+        document.getElementById('datetimeColumnModal')?.addEventListener('change', function(event) {
+
+            if (event.target.classList.contains('datetime-checkbox')) {
+
+                const checkedCount = this.querySelectorAll('.datetime-checkbox:checked').length;
+
+                if (checkedCount > 2) {
+
+                    event.target.checked = false;
+
+                    alert(`You can select a maximum of 2 datetime columns.`);
+
+                }
+
+            }
+
+        });
+
+    
+
+        initializeChart();
+
+                // Initial data load
+
+                if (initialGetDataTaskId) {
+
+                    pollForTableData(initialGetDataTaskId);
+
+                } else {
+
+                    renderTables();
+
+                    populateModals();
+
+                }
+
+                fetchPredictions();
+
+        
+
+            });
+
+    </script>
+</div>
+{% endblock %}

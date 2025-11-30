@@ -1,0 +1,16 @@
+# Ignore the .svn directory (often used by Subversion)
+.svn/
+
+# Ignore the .venv directory (often used for Python virtual environments)
+.venv/
+
+# General examples of common exclusions
+# Ignore build outputs
+/articles/
+
+# Ignore IDE configuration files (e.g., VS Code settings)
+.vscode/
+
+# Ignore operating system files
+.DS_Store
+Thumbs.db
