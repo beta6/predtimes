@@ -1,3 +1,15 @@
+## 🤖 Aviso sobre Desarrollo Asistido por IA
+
+**Transparencia:** Partes significativas del código fuente de este repositorio fueron generadas utilizando modelos de lenguaje de Inteligencia Artificial (por ejemplo, ChatGPT/Copilot/Claude).
+
+**Limitaciones y Seguridad:**
+* **Verificación:** Aunque se ha realizado un esfuerzo humano para curar y probar el código, no se garantiza que esté libre de errores, vulnerabilidades de seguridad o "alucinaciones" de la IA.
+* **Licencias:** Se ha intentado asegurar que el código generado no infrinja derechos de terceros, pero la naturaleza de los modelos de IA hace difícil garantizar la originalidad total de cada fragmento.
+
+**Uso:** Al utilizar este software, usted acepta que el autor no será responsable de ningún daño, pérdida de datos o consecuencias legales derivadas de su uso. Se aconseja encarecidamente realizar sus propias auditorías de seguridad.
+
+
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
