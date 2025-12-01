@@ -89,7 +89,7 @@ PredTimes is a web-based application designed for easy time series forecasting. 
 
 ## Author
 
--   **beta6** - [https://www.tuxrincon.com/](https://www.tuxrincon.com/)
+-   **beta6** - [https://www.tuxrincon.com/es/blog/predtimes-tu-asistente-de-ia-para-pron%C3%B3sticos-de-series-temporales/](https://www.tuxrincon.com/es/blog/predtimes-tu-asistente-de-ia-para-pron%C3%B3sticos-de-series-temporales/)
 
 ## License
 
