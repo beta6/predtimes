@@ -71,19 +71,6 @@ class Model(models.Model):
     def __str__(self):
         return f"Model for {self.project.name} ({self.architecture})"
 
-class Prediction(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='predictions')
-    model = models.ForeignKey(Model, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField()
-    value = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['timestamp']
-
-    def __str__(self):
-        return f"Prediction for {self.project.name} at {self.timestamp}: {self.value}"
-
 
 class TrainingSession(models.Model):
     STATUS_CHOICES = [
@@ -96,7 +83,6 @@ class TrainingSession(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='training_sessions')
     celery_task_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     model_architecture = models.CharField(max_length=100)
-    model = models.ForeignKey(Model, on_delete=models.SET_NULL, null=True, blank=True, related_name='training_sessions_as_model')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     details = models.TextField(blank=True, null=True)
     group_columns = models.JSONField(null=True, blank=True)

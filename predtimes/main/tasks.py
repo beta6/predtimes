@@ -201,7 +201,7 @@ def generate_predictions_task(self, project_id, num_predictions=10):
     """
     Celery task to generate future predictions for each group.
     """
-    from .models import Prediction, TrainingSession
+    from .models import TrainingSession
     from datetime import datetime
     from tensorflow.keras.models import load_model
     from collections import defaultdict
