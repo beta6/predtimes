@@ -55,6 +55,15 @@ def test_db_connection(request):
 
 
 def login_view(request):
+    """
+    Handles user login.
+
+    If the user is already logged in, they are redirected to the home page.
+    On POST, it validates the submitted username and password against the
+    credentials stored in the config.ini file. On successful login, the user
+s
+    session is updated, and they are redirected to the home page.
+    """
     if request.session.get('is_logged_in', False):
         return redirect(reverse('home'))
 
@@ -77,11 +86,23 @@ def login_view(request):
     return render(request, 'login.html', {'error': error})
 
 def logout_view(request):
+    """
+    Handles user logout.
+
+    This view flushes the user's session data, effectively logging them out,
+    and then redirects them to the login page.
+    """
     request.session.flush()
     return redirect(reverse('login'))
 
 @login_required
 def home_view(request):
+    """
+    Displays the home page.
+
+    This view shows a list of all projects, ordered by creation date. It also
+    provides a hint from the HINTS dictionary.
+    """
     username = request.session.get('username', 'User')
     projects = Project.objects.all().order_by('-created_at')
     context = {
@@ -93,6 +114,13 @@ def home_view(request):
 
 @login_required
 def project_wizard_step1(request):
+    """
+    Handles the first step of the project creation wizard: database connection.
+
+    This view displays a form for the user to enter their database connection
+    details. On POST, it validates the form and stores the data in the session
+    before redirecting to the next step.
+    """
     if request.method == 'POST':
         form = ExternalDatabaseForm(request.POST)
         if form.is_valid():
@@ -112,6 +140,13 @@ from django.contrib import messages
 
 @login_required
 def project_wizard_step2(request):
+    """
+    Handles the second step of the project creation wizard: table selection.
+
+    This view connects to the database using the details from step 1, fetches a
+    list of available tables, and displays them to the user. On POST, it
+    stores the selected tables in the session and redirects to the final step.
+    """
     db_data = request.session.get('wizard_db_data')
     if not db_data:
         messages.error(request, "Database connection data not found. Please start from step 1.")
@@ -182,6 +217,13 @@ def get_prediction_status(request, task_id):
 @login_required
 @require_POST
 def save_column_selection(request, project_id):
+    """
+    Saves the user's column selections for a project.
+
+    This view handles an AJAX POST request containing the columns selected by
+    the user for a specific role (datetime, numeric, or multigroup). It
+    updates the ProjectColumn model in a database transaction.
+    """
     try:
         project = Project.objects.get(id=project_id)
         data = json.loads(request.body)
@@ -297,6 +339,13 @@ def trigger_table_data_refresh(request, project_id):
 
 @login_required
 def project_detail(request, project_id):
+    """
+    Displays the main detail page for a project.
+
+    This view fetches the project and its associated data, such as selected
+    columns and tables. It also triggers a Celery task to fetch sample data
+    from the external database for display in the UI.
+    """
     project = get_object_or_404(Project, id=project_id)
     
     # Trigger the Celery task to get table sample data
@@ -450,6 +499,14 @@ def download_predictions_csv(request, project_id):
 
 @login_required
 def project_wizard_step3(request):
+    """
+    Handles the final step of the project creation wizard: project details.
+
+    This view displays a form for the user to name their project. On POST, it
+    creates the Project, ExternalDatabase, and SelectedTable objects in a
+    database transaction, cleans up the session data, and redirects to the
+    home page.
+    """
     db_data = request.session.get('wizard_db_data')
     selected_tables = request.session.get('wizard_selected_tables')
 

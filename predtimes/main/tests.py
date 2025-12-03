@@ -1,3 +1,6 @@
+"""
+This file contains the unit and integration tests for the 'main' application.
+"""
 from django.test import TestCase, Client
 from django.urls import reverse
 from .models import Project, TrainingSession, ExternalDatabase, ProjectColumn, Model
@@ -9,6 +12,10 @@ from sqlalchemy import create_engine, text
 from unittest.mock import patch
 
 class DataViewsTestCase(TestCase):
+    """
+    Test case for views related to data handling, such as fetching predictions
+    and project details.
+    """
     def setUp(self):
         self.project = Project.objects.create(name='Test Project', creator='Test User')
         self.client = Client()
@@ -267,6 +274,9 @@ class DataViewsTestCase(TestCase):
             self.assertTrue(ProjectColumn.objects.filter(id=initial_column.id).exists())
 
 class TrainingSessionTestCase(TestCase):
+    """
+    Test case for the TrainingSession model and related views.
+    """
     def setUp(self):
         self.project = Project.objects.create(name='Test Project', creator='Test User')
         self.client = Client()
@@ -328,6 +338,9 @@ class TrainingSessionTestCase(TestCase):
         self.assertEqual(response_data['celery_task_id'], 'test_task_id')
 
 class ProjectDeletionTestCase(TestCase):
+    """
+    Test case for project deletion and the cascading deletion of related objects.
+    """
     def setUp(self):
         self.project = Project.objects.create(name='Test Project for Deletion', creator='Test User')
         self.db = ExternalDatabase.objects.create(project=self.project, db_type='sqlite', dbname='test.db', port=0)
@@ -364,6 +377,9 @@ class ProjectDeletionTestCase(TestCase):
         self.assertFalse(TrainingSession.objects.filter(project=self.project).exists())
 
 class AuthenticationTestCase(TestCase):
+    """
+    Test case for user authentication (login and logout).
+    """
     def setUp(self):
         self.client = Client()
         self.login_url = reverse('login')
@@ -404,6 +420,9 @@ class AuthenticationTestCase(TestCase):
         self.assertNotIn('is_logged_in', self.client.session)
 
 class ProjectWizardTestCase(TestCase):
+    """
+    Test case for the project creation wizard.
+    """
     def setUp(self):
         self.client = Client()
         

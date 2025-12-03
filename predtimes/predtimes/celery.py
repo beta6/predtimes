@@ -1,3 +1,10 @@
+"""
+Celery configuration for the PredTimes application.
+
+This module configures Celery for asynchronous task processing. It sets up the
+Celery application, loads the configuration from the Django settings, and
+auto-discovers tasks from all registered Django apps.
+"""
 import os
 from celery import Celery
 

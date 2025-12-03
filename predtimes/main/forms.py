@@ -2,16 +2,25 @@ from django import forms
 from .models import ExternalDatabase, Project
 
 class ProjectForm(forms.ModelForm):
+    """
+    A form for creating and updating Project instances.
+    """
     class Meta:
         model = Project
         fields = ['name', 'creator']
 
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the ProjectForm, adding CSS classes to the form fields.
+        """
         super().__init__(*args, **kwargs)
         self.fields['name'].widget.attrs['class'] = 'form-control'
         self.fields['creator'].widget.attrs['class'] = 'form-control'
 
 class ExternalDatabaseForm(forms.ModelForm):
+    """
+    A form for creating and updating ExternalDatabase instances.
+    """
     class Meta:
         model = ExternalDatabase
         fields = ['db_type', 'host', 'port', 'dbname', 'user', 'password']
@@ -23,6 +32,9 @@ class ExternalDatabaseForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the ExternalDatabaseForm, adding CSS classes to the form fields.
+        """
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'

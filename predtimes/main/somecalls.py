@@ -40,8 +40,19 @@ def _get_training_data_from_db(project_id, datetime_cols, numeric_cols, multigro
 
 def save_table_data(project_id, datetime_cols, numeric_cols, multigroup_cols):
     """
-    Fetches data from the project's database and saves it to a CSV file.
-    Returns the path to the saved file.
+    Fetches data from the project's database and saves it to a temporary CSV file.
+
+    This function is used to create a snapshot of the training data, which can
+    be useful for debugging or for training models outside of the main application.
+
+    Args:
+        project_id: The ID of the project to fetch data for.
+        datetime_cols: A list of the datetime columns.
+        numeric_cols: A list of the numeric columns.
+        multigroup_cols: A list of the multigroup columns.
+
+    Returns:
+        The path to the saved CSV file.
     """
     df = _get_training_data_from_db(project_id, datetime_cols, numeric_cols, multigroup_cols)
     
@@ -59,8 +70,19 @@ def save_table_data(project_id, datetime_cols, numeric_cols, multigroup_cols):
 @shared_task
 def _get_actual_data_for_chart(project_id, num_days_to_fetch=365):
     """
-    Helper function to fetch recent actual data from the external DB for charting,
-    now grouping by multigroup columns.
+    Asynchronous Celery task to fetch recent actual data from the external DB for
+    charting purposes.
+
+    This function retrieves the most recent data points from the user's database
+    to be displayed on the project's detail page. It groups the data by the
+    configured 'multigroup' columns.
+
+    Args:
+        project_id: The ID of the project to fetch data for.
+        num_days_to_fetch: The number of days of recent data to fetch.
+
+    Returns:
+        A dictionary containing the actual data, grouped by group key.
     """
     from collections import defaultdict
     actual_data_by_group = defaultdict(lambda: defaultdict(list))

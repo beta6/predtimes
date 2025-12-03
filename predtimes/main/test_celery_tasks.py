@@ -1,3 +1,6 @@
+"""
+This file contains tests for the Celery tasks in the 'main' application.
+"""
 from django.test import TestCase, Client
 from django.urls import reverse
 from .models import Project, TrainingSession, Model, ExternalDatabase, SelectedTable, ProjectColumn
@@ -9,6 +12,9 @@ import configparser
 import json
 
 class TrainModelTaskTestCase(TestCase):
+    """
+    Test case for the train_model_task Celery task.
+    """
     def setUp(self):
         # Create a project
         self.project = Project.objects.create(name='Test Project for Training', creator='Test User')
@@ -112,6 +118,9 @@ class TrainModelTaskTestCase(TestCase):
 
 
 class GeneratePredictionsTaskTestCase(TestCase):
+    """
+    Test case for the generate_predictions_task Celery task.
+    """
     def setUp(self):
         # Create a project
         self.project = Project.objects.create(name='Test Project for Prediction', creator='Test User')

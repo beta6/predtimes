@@ -12,6 +12,19 @@ from .somecalls import _get_training_data_from_db, save_table_data
 import joblib
 
 def create_patches(time_series, patch_len, stride):
+    """
+    Creates patches from a time series.
+
+    This is used to prepare data for the PatchTST model.
+
+    Args:
+        time_series: The input time series data.
+        patch_len: The length of each patch.
+        stride: The stride between patches.
+
+    Returns:
+        A numpy array of patches.
+    """
     patches = []
     for i in range(0, len(time_series) - patch_len + 1, stride):
         patches.append(time_series[i : i + patch_len])
@@ -199,7 +212,18 @@ def train_model_task(self, training_session_id):
 @shared_task(bind=True)
 def generate_predictions_task(self, project_id, num_predictions=10):
     """
-    Celery task to generate future predictions for each group.
+    Celery task to generate future predictions for each group in a project.
+
+    This task loads the latest trained models for a project, fetches the most
+    recent data from the external database, and generates a specified number of
+    future predictions. The predictions are saved to a JSON file.
+
+    Args:
+        project_id: The ID of the project to generate predictions for.
+        num_predictions: The number of future predictions to generate.
+
+    Returns:
+        A success message if predictions are generated successfully.
     """
     from .models import TrainingSession
     from datetime import datetime
@@ -383,8 +407,18 @@ def generate_predictions_task(self, project_id, num_predictions=10):
 
 def _get_table_sample_data(project_id):
     """
-    Helper function to fetch sample data from external tables for a given project.
-    This function is designed to be called by a Celery task.
+    Helper function to fetch a small sample of data from the external tables
+    associated with a project.
+
+    This function connects to the project's external database and retrieves the
+    first 5 rows from each selected table. This data is used to provide a
+    preview to the user in the UI.
+
+    Args:
+        project_id: The ID of the project to fetch data for.
+
+    Returns:
+        A dictionary containing the table data and any error messages.
     """
     from sqlalchemy.exc import SQLAlchemyError
 
@@ -423,7 +457,16 @@ def _get_table_sample_data(project_id):
 @shared_task
 def get_table_sample_data_task(project_id):
     """
-    Celery task to fetch sample data for a project's selected tables.
+    Celery task to fetch a sample of data for a project's selected tables.
+
+    This task is intended to be called asynchronously to avoid blocking the main
+    application thread while fetching data from the external database.
+
+    Args:
+        project_id: The ID of the project to fetch data for.
+
+    Returns:
+        The result of the _get_table_sample_data function.
     """
     return _get_table_sample_data(project_id)
 

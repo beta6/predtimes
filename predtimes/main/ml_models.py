@@ -123,6 +123,14 @@ class DLinear(keras.models.Model):
         return model
 
 class MultiHeadSelfAttention(layers.Layer):
+    """
+    Implements Multi-Head Self-Attention layer.
+
+    This layer is a key component of the Transformer architecture. It allows the model to
+    weigh the importance of different words in an input sequence when encoding a
+    representation for each word. It does this by running multiple "attention heads"
+    in parallel and then concatenating their outputs.
+    """
     def __init__(self, embed_dim, num_heads=8):
         super(MultiHeadSelfAttention, self).__init__()
         self.embed_dim = embed_dim
@@ -138,6 +146,17 @@ class MultiHeadSelfAttention(layers.Layer):
         self.combine_heads = layers.Dense(embed_dim)
 
     def attention(self, query, key, value):
+        """
+        Calculates the attention weights and applies them to the value.
+
+        Args:
+            query: The query tensor.
+            key: The key tensor.
+            value: The value tensor.
+
+        Returns:
+            A tuple containing the output tensor and the attention weights.
+        """
         score = tf.matmul(query, key, transpose_b=True)
         dim_key = tf.cast(tf.shape(key)[-1], tf.float32)
         scaled_score = score / tf.math.sqrt(dim_key)
@@ -146,10 +165,29 @@ class MultiHeadSelfAttention(layers.Layer):
         return output, weights
 
     def separate_heads(self, x, batch_size):
+        """
+        Separates the input tensor into multiple heads.
+
+        Args:
+            x: The input tensor.
+            batch_size: The batch size.
+
+        Returns:
+            The reshaped tensor with separate heads.
+        """
         x = tf.reshape(x, (batch_size, -1, self.num_heads, self.projection_dim))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def call(self, inputs):
+        """
+        Forward pass of the MultiHeadSelfAttention layer.
+
+        Args:
+            inputs: The input tensor.
+
+        Returns:
+            The output tensor.
+        """
         batch_size = tf.shape(inputs)[0]
         query = self.query_dense(inputs)
         key = self.key_dense(inputs)
@@ -164,6 +202,13 @@ class MultiHeadSelfAttention(layers.Layer):
         return output
 
 class TransformerBlock(layers.Layer):
+    """
+    Implements a single Transformer block.
+
+    A Transformer block consists of a multi-head self-attention layer followed by a
+    position-wise feed-forward network. Residual connections and layer normalization
+    are applied after each sub-layer.
+    """
     def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
         super(TransformerBlock, self).__init__()
         self.att = MultiHeadSelfAttention(embed_dim, num_heads)
@@ -176,6 +221,16 @@ class TransformerBlock(layers.Layer):
         self.dropout2 = layers.Dropout(rate)
 
     def call(self, inputs, training=None):
+        """
+        Forward pass of the Transformer block.
+
+        Args:
+            inputs: The input tensor.
+            training: A boolean indicating whether the model is in training mode.
+
+        Returns:
+            The output tensor.
+        """
         attn_output = self.att(inputs)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(inputs + attn_output)
@@ -184,12 +239,27 @@ class TransformerBlock(layers.Layer):
         return self.layernorm2(out1 + ffn_output)
 
 class TokenAndPositionEmbedding(layers.Layer):
+    """
+    Implements token and position embedding.
+
+    This layer first projects the input patches to a specified embedding dimension
+    and then adds positional embeddings to incorporate the order of the patches.
+    """
     def __init__(self, maxlen, vocab_size, embed_dim):
         super(TokenAndPositionEmbedding, self).__init__()
         self.token_emb = layers.Dense(embed_dim) # Linear projection for patches
         self.pos_emb = layers.Embedding(input_dim=maxlen, output_dim=embed_dim)
 
     def call(self, x):
+        """
+        Forward pass of the TokenAndPositionEmbedding layer.
+
+        Args:
+            x: The input tensor (patches).
+
+        Returns:
+            The embedded tensor.
+        """
         maxlen = tf.shape(x)[-2] # Number of patches
         positions = tf.range(start=0, limit=maxlen, delta=1)
         positions = self.pos_emb(positions)
@@ -206,6 +276,27 @@ def get_patchtst_model(
     num_transformer_blocks=4,
     dropout_rate=0.1,
     ):
+    """
+    Builds a PatchTST-based model for time series forecasting.
+
+    PatchTST is a Transformer-based model that processes time series data in
+    patches, which helps to capture both local and global patterns.
+
+    Note: This is a simplified placeholder implementation.
+
+    Args:
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+        patch_len: The length of each patch.
+        embed_dim: The embedding dimension.
+        num_heads: The number of attention heads.
+        ff_dim: The dimension of the feed-forward network.
+        num_transformer_blocks: The number of Transformer blocks.
+        dropout_rate: The dropout rate.
+
+    Returns:
+        A Keras model.
+    """
 
     # The current data preparation for patchtst provides an input of shape
     # (patch_len, num_features). This is a single patch.
@@ -221,7 +312,19 @@ def get_patchtst_model(
     return model
 
 def get_conv1d_model(input_shape, num_features):
-    """Builds a simple Conv1D model."""
+    """
+    Builds a simple Conv1D model for time series forecasting.
+
+    This model uses a 1D convolutional layer to extract features from the
+    time series data, followed by a global max pooling layer and dense layers.
+
+    Args:
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+
+    Returns:
+        A Keras model.
+    """
     model = keras.Sequential(name="Conv1D_Model")
     model.add(layers.Input(shape=input_shape))
     model.add(layers.Conv1D(filters=64, kernel_size=3, activation='relu'))
@@ -231,7 +334,19 @@ def get_conv1d_model(input_shape, num_features):
     return model
 
 def get_conv1d_gru_model(input_shape, num_features):
-    """Builds a mixed Conv1D-GRU model."""
+    """
+    Builds a mixed Conv1D-GRU model for time series forecasting.
+
+    This model combines a 1D convolutional layer for feature extraction with a
+    GRU (Gated Recurrent Unit) layer to capture sequential patterns.
+
+    Args:
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+
+    Returns:
+        A Keras model.
+    """
     model = keras.Sequential(name="Conv1D_GRU_Model")
     model.add(layers.Input(shape=input_shape))
     model.add(layers.Conv1D(filters=64, kernel_size=3, activation='relu'))
@@ -241,7 +356,25 @@ def get_conv1d_gru_model(input_shape, num_features):
     return model
 
 def get_transformer_model(input_shape, num_features, head_size=256, num_heads=4, ff_dim=4, num_transformer_blocks=4, mlp_units=128):
-    """Builds a Transformer-based model for time series."""
+    """
+    Builds a Transformer-based model for time series forecasting.
+
+    This model uses multiple Transformer blocks, each consisting of multi-head
+    self-attention and a feed-forward network, to learn complex patterns in the
+    time series data.
+
+    Args:
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+        head_size: The dimension of each attention head.
+        num_heads: The number of attention heads.
+        ff_dim: The dimension of the feed-forward network.
+        num_transformer_blocks: The number of Transformer blocks.
+        mlp_units: The number of units in the MLP head.
+
+    Returns:
+        A Keras model.
+    """
     inputs = keras.Input(shape=input_shape)
     x = inputs
     for _ in range(num_transformer_blocks):
@@ -269,7 +402,19 @@ def get_transformer_model(input_shape, num_features, head_size=256, num_heads=4,
     return keras.Model(inputs, outputs, name="Transformer_Model")
 
 def get_rnn_model(input_shape, num_features):
-    """Builds a simple RNN model."""
+    """
+    Builds a simple RNN model for time series forecasting.
+
+    This model uses a SimpleRNN layer to process the time series data
+    sequentially.
+
+    Args:
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+
+    Returns:
+        A Keras model.
+    """
     model = keras.Sequential(name="RNN_Model")
     model.add(layers.Input(shape=input_shape))
     model.add(layers.SimpleRNN(64, return_sequences=False))
@@ -278,14 +423,38 @@ def get_rnn_model(input_shape, num_features):
     return model
 
 def get_dlinear_model(input_shape, num_features):
-    """Builds a DLinear model."""
+    """
+    Builds a DLinear model.
+
+    DLinear is a simple yet effective model for time series forecasting that
+    decomposes the time series into a trend and a remainder component.
+
+    Args:
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+
+    Returns:
+        A Keras model.
+    """
     output_shape = (input_shape[0], num_features)
     model = DLinear(output_shape)
     model.build(input_shape)
     return model.model()
 
 def get_model(architecture, input_shape, num_features):
-    """Factory function to get the specified model."""
+    """
+    Factory function to get the specified model.
+
+    This function returns a compiled Keras model for the given architecture.
+
+    Args:
+        architecture: The name of the model architecture to use.
+        input_shape: The shape of the input tensor.
+        num_features: The number of output features.
+
+    Returns:
+        A Keras model.
+    """
     if architecture == 'conv1d':
         return get_conv1d_model(input_shape, num_features)
     elif architecture == 'conv1d_gru':

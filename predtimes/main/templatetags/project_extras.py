@@ -1,3 +1,6 @@
+"""
+Custom template tags and filters for the PredTimes application.
+"""
 from django import template
 import json
 from django.utils.safestring import mark_safe
